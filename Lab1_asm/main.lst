@@ -1,0 +1,262 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;****************** main.s ***************
+    2 00000000         ; Program written by: ***Prawal Sharma**
+    3 00000000         ; Date Created: 9/5/2016
+    4 00000000         ; Last Modified: 9/5/2016
+    5 00000000         ; Section ***Tuesday 3-4
+    6 00000000         ; Instructor: ***Vijay Janappa Reddi
+    7 00000000         ; Lab number: 1
+    8 00000000         ; Brief description of the program:
+    9 00000000         ; The overall objective of this system is a digital lock
+                       
+   10 00000000         ; Hardware connections
+   11 00000000         ;  PE3 is switch input  (1 means switch is not pressed, 
+                       0 means switch is pressed)
+   12 00000000         ;  PE4 is switch input  (1 means switch is not pressed, 
+                       0 means switch is pressed)
+   13 00000000         ;  PE5 is switch input  (1 means switch is not pressed, 
+                       0 means switch is pressed)
+   14 00000000         ;  PE2 is LED output (0 means door is locked, 1 means do
+                       or is unlocked) 
+   15 00000000         ; The specific operation of this system is to 
+   16 00000000         ;   unlock if all three switches are pressed
+   17 00000000         
+   18 00000000 400243FC 
+                       GPIO_PORTE_DATA_R
+                               EQU              0x400243FC
+   19 00000000 40024400 
+                       GPIO_PORTE_DIR_R
+                               EQU              0x40024400
+   20 00000000 40024420 
+                       GPIO_PORTE_AFSEL_R
+                               EQU              0x40024420
+   21 00000000 4002451C 
+                       GPIO_PORTE_DEN_R
+                               EQU              0x4002451C
+   22 00000000 40024528 
+                       GPIO_PORTE_AMSEL_R
+                               EQU              0x40024528
+   23 00000000 4002452C 
+                       GPIO_PORTE_PCTL_R
+                               EQU              0x4002452C
+   24 00000000 400FE608 
+                       SYSCTL_RCGCGPIO_R
+                               EQU              0x400FE608
+   25 00000000         
+   26 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   27 00000000                 THUMB
+   28 00000000                 EXPORT           Start
+   29 00000000         ; Start Clock for Port E
+   30 00000000 4827    Start   LDR              R0, =SYSCTL_RCGCGPIO_R
+   31 00000002 6801            LDR              R1, [R0]
+   32 00000004 F041 0110       ORR              R1, #0x10
+   33 00000008 6001            STR              R1, [R0]
+   34 0000000A BF00            NOP
+   35 0000000C BF00            NOP
+   36 0000000E         ; Disable alternate function (pins 2,3,4,5)
+   37 0000000E         
+   38 0000000E 4925            LDR              R1, =GPIO_PORTE_AFSEL_R
+   39 00000010 6808            LDR              R0, [R1]
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   40 00000012 F020 003C       BIC              R0, #0x3C
+   41 00000016 6008            STR              R0, [R1]
+   42 00000018         ; Disable Analog Functions 
+   43 00000018 4923            LDR              R1, =GPIO_PORTE_AMSEL_R ; 3) di
+                                                            sable analog functi
+                                                            onality
+   44 0000001A F04F 0000       MOV              R0, #0      ; 0 means analog is
+                                                             off
+   45 0000001E 6008            STR              R0, [R1]
+   46 00000020 4922            LDR              R1, =GPIO_PORTE_PCTL_R ; 4) con
+                                                            figure as GPIO
+   47 00000022 F04F 0000       MOV              R0, #0x00000000 ; 0 means confi
+                                                            gure Port F as GPIO
+                                                            
+   48 00000026 6008            STR              R0, [R1]
+   49 00000028         
+   50 00000028         ; Initialize Port E
+   51 00000028         
+   52 00000028 4821            LDR              R0, =GPIO_PORTE_DIR_R
+   53 0000002A 6801            LDR              R1, [R0]
+   54 0000002C F001 01C7       AND              R1, R1, #0xC7
+   55 00000030 F041 0104       ORR              R1, R1, #0x04 ; PE2 Output, PE3
+                                                            ,4,5 Input
+   56 00000034 6001            STR              R1, [R0]
+   57 00000036         
+   58 00000036         
+   59 00000036         
+   60 00000036         ; Enable Pins
+   61 00000036 481F            LDR              R0, =GPIO_PORTE_DEN_R
+   62 00000038 6801            LDR              R1, [R0]
+   63 0000003A         
+   64 0000003A F041 013C       ORR              R1, R1, #0x3C
+   65 0000003E         
+   66 0000003E         
+   67 0000003E 6001            STR              R1, [R0]
+   68 00000040         
+   69 00000040         ; Main task portion
+   70 00000040 481D            LDR              R0, =GPIO_PORTE_DATA_R
+   71 00000042         
+   72 00000042 6801    loop    LDR              R1, [R0]
+   73 00000044 F021 0104       AND              R1, #0xFFFFFFFB ;  Initially Cl
+                                                            ear Pin 2
+   74 00000048 F001 0138       AND              R1, #0x38   ; Isolate pins 3,4,
+                                                            5
+   75 0000004C F003 0300       AND              R3, #0
+   76 00000050 F004 0400       AND              R4, #0
+   77 00000054 F005 0500       AND              R5, #0
+   78 00000058 440B            ADD              R3, R3, R1  ; R3 for pin 3
+   79 0000005A 440C            ADD              R4, R4, R1
+   80 0000005C 440D            ADD              R5, R5, R1
+   81 0000005E         
+   82 0000005E F003 0308       AND              R3, #0x08   ; Pin 3 isolation
+   83 00000062 F004 0410       AND              R4, #0x10   ; Pin 4 isolation
+   84 00000066 F005 0520       AND              R5, #0x20   ; Pin 5 isolation
+   85 0000006A EA4F 0454       LSR              R4, #1
+   86 0000006E EA4F 0595       LSR              R5, #2      ; Shift bits to pin
+                                                             3 position 
+   87 00000072 F083 0308       EOR              R3, #0x08
+   88 00000076 F084 0408       EOR              R4, #0x08
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   89 0000007A F085 0508       EOR              R5, #0x08   ; Not all of the pi
+                                                            n bits 
+   90 0000007E EA03 0604       AND              R6, R3, R4
+   91 00000082 EA06 0605       AND              R6, R6, R5
+   92 00000086 EA4F 0656       LSR              R6, #1
+   93 0000008A F8D0 9000       LDR              R9, [R0]
+   94 0000008E         ; Store New Lock Status 
+   95 0000008E F008 0800       AND              R8, #0
+   96 00000092 44C8            ADD              R8, R8, R9
+   97 00000094 F028 0804       AND              R8, #0xFFFFFFFB
+   98 00000098 EA46 0608       ORR              R6, R6, R8
+   99 0000009C         
+  100 0000009C 6006            STR              R6, [R0]
+  101 0000009E         
+  102 0000009E E7D0            B                loop
+  103 000000A0         
+  104 000000A0         
+  105 000000A0                 ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+  106 000000A0                 END                          ; end of file
+              400FE608 
+              40024420 
+              40024528 
+              4002452C 
+              40024400 
+              4002451C 
+              400243FC 
+Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\main.d
+ -o.\main.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC:\Keil\ARM\In
+c\Luminary --predefine="__EVAL SETA 1" --list=.\main.lst main.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 26 in file main.s
+   Uses
+      None
+Comment: .text unused
+Start 00000000
+
+Symbol: Start
+   Definitions
+      At line 30 in file main.s
+   Uses
+      At line 28 in file main.s
+Comment: Start used once
+loop 00000042
+
+Symbol: loop
+   Definitions
+      At line 72 in file main.s
+   Uses
+      At line 102 in file main.s
+Comment: loop used once
+3 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+GPIO_PORTE_AFSEL_R 40024420
+
+Symbol: GPIO_PORTE_AFSEL_R
+   Definitions
+      At line 20 in file main.s
+   Uses
+      At line 38 in file main.s
+Comment: GPIO_PORTE_AFSEL_R used once
+GPIO_PORTE_AMSEL_R 40024528
+
+Symbol: GPIO_PORTE_AMSEL_R
+   Definitions
+      At line 22 in file main.s
+   Uses
+      At line 43 in file main.s
+Comment: GPIO_PORTE_AMSEL_R used once
+GPIO_PORTE_DATA_R 400243FC
+
+Symbol: GPIO_PORTE_DATA_R
+   Definitions
+      At line 18 in file main.s
+   Uses
+      At line 70 in file main.s
+Comment: GPIO_PORTE_DATA_R used once
+GPIO_PORTE_DEN_R 4002451C
+
+Symbol: GPIO_PORTE_DEN_R
+   Definitions
+      At line 21 in file main.s
+   Uses
+      At line 61 in file main.s
+Comment: GPIO_PORTE_DEN_R used once
+GPIO_PORTE_DIR_R 40024400
+
+Symbol: GPIO_PORTE_DIR_R
+   Definitions
+      At line 19 in file main.s
+   Uses
+      At line 52 in file main.s
+Comment: GPIO_PORTE_DIR_R used once
+GPIO_PORTE_PCTL_R 4002452C
+
+Symbol: GPIO_PORTE_PCTL_R
+   Definitions
+      At line 23 in file main.s
+   Uses
+      At line 46 in file main.s
+Comment: GPIO_PORTE_PCTL_R used once
+SYSCTL_RCGCGPIO_R 400FE608
+
+Symbol: SYSCTL_RCGCGPIO_R
+   Definitions
+      At line 24 in file main.s
+   Uses
+      At line 30 in file main.s
+Comment: SYSCTL_RCGCGPIO_R used once
+7 symbols
+343 symbols in table
